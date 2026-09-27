@@ -29,11 +29,22 @@ class GuildQueue {
 
     this.player.on('error', (error) => {
       console.error(`Playback error in guild ${this.guildId} playing "${this.songs[0]?.url}":`, error);
-      if (this.textChannel && this.songs[0]) {
-        this.textChannel.send(`⚠️ Skipping **${this.songs[0].title}** — playback failed.`).catch(() => {});
+      const song = this.songs[0];
+      this.playing = false;
+
+      // YouTube CDN rate limit: retry once after a short delay instead of dropping the song
+      const isRateLimited = error.message?.includes('Status code: 429');
+      if (song && isRateLimited && !song.retried) {
+        song.retried = true;
+        this.textChannel?.send(`⏳ YouTube rate-limited **${song.title}**, retrying in 5s...`).catch(() => {});
+        setTimeout(() => this.playNext(), 5000);
+        return;
+      }
+
+      if (this.textChannel && song) {
+        this.textChannel.send(`⚠️ Skipping **${song.title}** — playback failed.`).catch(() => {});
       }
       this.songs.shift();
-      this.playing = false;
       this.playNext();
     });
   }
