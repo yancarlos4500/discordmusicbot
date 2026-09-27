@@ -8,6 +8,7 @@ const {
   StreamType,
 } = require('@discordjs/voice');
 const ytdl = require('@distube/ytdl-core');
+const { getAgent } = require('./ytdlAgent');
 
 /** Holds playback state (connection, player, song list) for a single guild. */
 class GuildQueue {
@@ -77,10 +78,12 @@ class GuildQueue {
     const song = this.songs[0];
     this.playing = true;
 
+    const agent = getAgent();
     const stream = ytdl(song.url, {
       filter: 'audioonly',
       quality: 'highestaudio',
       highWaterMark: 1 << 25,
+      ...(agent ? { agent } : {}),
     });
     const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
     this.player.play(resource);

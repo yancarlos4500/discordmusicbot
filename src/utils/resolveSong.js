@@ -1,5 +1,6 @@
 const ytdl = require('@distube/ytdl-core');
 const ytsr = require('@distube/ytsr');
+const { getAgent } = require('./ytdlAgent');
 
 /**
  * Resolves a user query (URL or search terms) to a playable song object.
@@ -8,7 +9,8 @@ const ytsr = require('@distube/ytsr');
  */
 async function resolveSong(query, requestedBy) {
   if (ytdl.validateURL(query)) {
-    const info = await ytdl.getBasicInfo(query);
+    const agent = getAgent();
+    const info = await ytdl.getBasicInfo(query, agent ? { agent } : undefined);
     return {
       title: info.videoDetails.title,
       url: info.videoDetails.video_url,

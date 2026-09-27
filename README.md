@@ -48,21 +48,30 @@ If it still doesn't join:
 - Check the deploy script's console output for errors — a 401 means a bad `DISCORD_TOKEN`, a 403 usually means the bot wasn't invited with the `applications.commands` scope.
 - Confirm the `CLIENT_ID` used for `npm run deploy` matches the bot you invited (same application).
 
-## Bot joins the voice channel but won't play / "Could not join the voice channel"
+## Bot joins the voice channel but audio never plays
 
-If the bot visually shows as connected to the voice channel but `/play` still replies "Could not join the voice channel", or playback never starts, check the logs (Railway → your service → **Deployments → View Logs**) for lines like:
+Requires **Node.js ≥22.12.0** and `@discordjs/voice` ≥0.19 — older versions don't support Discord's mandatory DAVE (end-to-end encryption) voice protocol and will fail to connect with close code `4017`. If playback still fails, check the logs for `[voice <guildId>] ...` lines (enabled via the `debug: true` option passed to `joinVoiceChannel` in [queue.js](src/utils/queue.js)) to see exactly where the handshake stops.
 
-```
-[voice <guildId>] signalling -> connecting
-[voice <guildId>] connecting -> ready
-```
+## Playback fails with "Sign in to confirm you're not a bot"
 
-If it gets stuck at `connecting` and never reaches `ready`, that's the actual audio (UDP/RTP) handshake failing — this is **not the same connection as the visible "joined channel" state**, which only requires the WebSocket gateway and succeeds much earlier. A stuck `connecting` state almost always means outbound UDP traffic is being blocked or restricted by the host's network, not a bug in this bot.
+This is YouTube's own anti-bot challenge, not a bug in this bot — it commonly triggers for requests coming from datacenter IPs (like Railway's). To work around it, supply your own YouTube cookies:
 
-To fix it:
-- Confirm it works when running the bot **locally** first (`npm start` on your own machine) — if it works locally but not on Railway, it's the hosting network, not the code.
-- On Railway, check the service isn't on a networking mode that restricts UDP, and try redeploying to a different region.
-- If it still fails, Railway (and several other container PaaS platforms) can have inconsistent UDP support for Discord voice specifically. Hosting on a small VPS (e.g. a $5–6/mo DigitalOcean/Vultr/Oracle Cloud instance) is the most reliable fix for voice bots if this persists.
+1. Log into youtube.com in a browser, then use a cookie-export extension (e.g. "Cookie-Editor") to export cookies for `youtube.com` as **JSON**.
+2. Set the `YT_COOKIES` env var (locally in `.env`, and in Railway's Variables tab) to that JSON array as a single-line string.
+3. Restart the bot. [ytdlAgent.js](src/utils/ytdlAgent.js) picks it up automatically and authenticates all YouTube requests with it.
+
+This isn't foolproof since YouTube's detection evolves — if it recurs even with cookies set, refresh the cookies (they expire) or consider switching to a `yt-dlp`-based approach, which is more actively maintained against YouTube's changes.
+
+### Setting cookies via Discord instead of an env var
+
+The `/setcookies` command lets you upload the exported cookies JSON file directly in Discord instead of editing `YT_COOKIES`. It's restricted to a single owner:
+
+1. Set `OWNER_ID` in `.env` (and Railway's Variables) to your own Discord user ID. The command refuses to run for anyone else, and refuses entirely if `OWNER_ID` isn't set.
+2. Run `npm run deploy` again so the new command registers.
+3. In Discord, run `/setcookies` and attach the exported `cookies.json` file. The reply is ephemeral and the file contents are never logged.
+4. Takes effect immediately — no restart needed.
+
+Caveat: cookies set this way are saved to a local `data/cookies.json` file, which persists across restarts but is wiped on Railway when you redeploy (new container filesystem). The `YT_COOKIES` env var survives redeploys; the slash command is just more convenient for quick updates without touching Railway's dashboard.
 
 ## Commands
 
@@ -73,6 +82,7 @@ To fix it:
 - `/queue` – show the current queue
 - `/stop` – stop playback, clear the queue, and leave the voice channel
 - `/leave` – disconnect from the voice channel
+- `/setcookies file:<cookies.json>` – (owner only) update the YouTube cookies used for playback
 
 ## Deploying to Railway
 
