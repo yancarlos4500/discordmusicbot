@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { getOrCreateQueue } = require('../utils/queue');
 const { resolveSong } = require('../utils/resolveSong');
 
@@ -16,12 +16,12 @@ module.exports = {
   async execute(interaction) {
     const voiceChannel = interaction.member.voice?.channel;
     if (!voiceChannel) {
-      return interaction.reply({ content: 'Join a voice channel first.', ephemeral: true });
+      return interaction.reply({ content: 'Join a voice channel first.', flags: MessageFlags.Ephemeral });
     }
 
     const permissions = voiceChannel.permissionsFor(interaction.client.user);
     if (!permissions.has(PermissionFlagsBits.Connect) || !permissions.has(PermissionFlagsBits.Speak)) {
-      return interaction.reply({ content: "I need permission to join and speak in that voice channel.", ephemeral: true });
+      return interaction.reply({ content: "I need permission to join and speak in that voice channel.", flags: MessageFlags.Ephemeral });
     }
 
     await interaction.deferReply();
@@ -47,7 +47,9 @@ module.exports = {
         await queue.connect(voiceChannel);
       } catch (error) {
         console.error('Failed to join voice channel:', error);
-        return interaction.editReply('Could not join the voice channel.');
+        return interaction.editReply(
+          'Could not establish a voice connection (timed out). This usually means the host network is blocking the UDP traffic Discord voice needs, not a config mistake — see the README troubleshooting section.'
+        );
       }
     }
 

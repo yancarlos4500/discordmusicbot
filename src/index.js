@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, MessageFlags } = require('discord.js');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
@@ -28,7 +28,7 @@ client.on('interactionCreate', async (interaction) => {
     await command.execute(interaction);
   } catch (error) {
     console.error(`Error executing command ${interaction.commandName}:`, error);
-    const errorMessage = { content: 'There was an error running that command.', ephemeral: true };
+    const errorMessage = { content: 'There was an error running that command.', flags: MessageFlags.Ephemeral };
     if (interaction.deferred && !interaction.replied) {
       // deferred replies must be edited, not followed up, or the "thinking..." placeholder never resolves
       await interaction.editReply(errorMessage).catch(() => {});

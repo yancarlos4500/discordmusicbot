@@ -40,15 +40,20 @@ class GuildQueue {
       channelId: voiceChannel.id,
       guildId: voiceChannel.guild.id,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+      // required for the connection to emit 'debug' events at all
+      debug: true,
     });
     this.connection.on('stateChange', (oldState, newState) => {
       console.log(`[voice ${this.guildId}] ${oldState.status} -> ${newState.status}`);
     });
+    // low-level handshake internals: DNS, UDP IP discovery, encryption negotiation
+    this.connection.on('debug', (message) => console.log(`[voice ${this.guildId}] debug: ${message}`));
+    this.connection.on('error', (error) => console.error(`[voice ${this.guildId}] error:`, error));
     this.connection.subscribe(this.player);
     try {
-      await entersState(this.connection, VoiceConnectionStatus.Ready, 20_000);
+      // generous timeout: the voice websocket can drop and auto-rejoin mid-handshake, which takes longer than the default 20s
+      await entersState(this.connection, VoiceConnectionStatus.Ready, 30_000);
     } catch (error) {
-      // never reached Ready: almost always outbound UDP being blocked/restricted by the host network, not a code bug
       this.connection.destroy();
       this.connection = null;
       throw error;

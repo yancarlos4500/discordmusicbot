@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getQueue, deleteQueue } = require('../utils/queue');
 
 module.exports = {
@@ -7,7 +7,7 @@ module.exports = {
   async execute(interaction) {
     const queue = getQueue(interaction.guild.id);
     if (!queue || !queue.connection) {
-      return interaction.reply({ content: "I'm not in a voice channel.", ephemeral: true });
+      return interaction.reply({ content: "I'm not in a voice channel.", flags: MessageFlags.Ephemeral });
     }
 
     queue.stop();

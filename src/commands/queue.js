@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const { getQueue } = require('../utils/queue');
 
 module.exports = {
@@ -7,7 +7,7 @@ module.exports = {
   async execute(interaction) {
     const queue = getQueue(interaction.guild.id);
     if (!queue || queue.songs.length === 0) {
-      return interaction.reply({ content: 'The queue is empty.', ephemeral: true });
+      return interaction.reply({ content: 'The queue is empty.', flags: MessageFlags.Ephemeral });
     }
 
     const list = queue.songs

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getQueue } = require('../utils/queue');
 
 module.exports = {
@@ -7,7 +7,7 @@ module.exports = {
   async execute(interaction) {
     const queue = getQueue(interaction.guild.id);
     if (!queue || queue.songs.length === 0) {
-      return interaction.reply({ content: 'There is nothing to resume.', ephemeral: true });
+      return interaction.reply({ content: 'There is nothing to resume.', flags: MessageFlags.Ephemeral });
     }
 
     queue.resume();

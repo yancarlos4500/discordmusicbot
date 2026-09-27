@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getQueue, deleteQueue } = require('../utils/queue');
 
 module.exports = {
@@ -7,7 +7,7 @@ module.exports = {
   async execute(interaction) {
     const queue = getQueue(interaction.guild.id);
     if (!queue) {
-      return interaction.reply({ content: "I'm not playing anything.", ephemeral: true });
+      return interaction.reply({ content: "I'm not playing anything.", flags: MessageFlags.Ephemeral });
     }
 
     queue.stop();
