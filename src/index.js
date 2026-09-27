@@ -29,7 +29,10 @@ client.on('interactionCreate', async (interaction) => {
   } catch (error) {
     console.error(`Error executing command ${interaction.commandName}:`, error);
     const errorMessage = { content: 'There was an error running that command.', ephemeral: true };
-    if (interaction.replied || interaction.deferred) {
+    if (interaction.deferred && !interaction.replied) {
+      // deferred replies must be edited, not followed up, or the "thinking..." placeholder never resolves
+      await interaction.editReply(errorMessage).catch(() => {});
+    } else if (interaction.replied) {
       await interaction.followUp(errorMessage).catch(() => {});
     } else {
       await interaction.reply(errorMessage).catch(() => {});

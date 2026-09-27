@@ -41,8 +41,18 @@ class GuildQueue {
       guildId: voiceChannel.guild.id,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
     });
+    this.connection.on('stateChange', (oldState, newState) => {
+      console.log(`[voice ${this.guildId}] ${oldState.status} -> ${newState.status}`);
+    });
     this.connection.subscribe(this.player);
-    await entersState(this.connection, VoiceConnectionStatus.Ready, 20_000);
+    try {
+      await entersState(this.connection, VoiceConnectionStatus.Ready, 20_000);
+    } catch (error) {
+      // never reached Ready: almost always outbound UDP being blocked/restricted by the host network, not a code bug
+      this.connection.destroy();
+      this.connection = null;
+      throw error;
+    }
   }
 
   enqueue(song) {
