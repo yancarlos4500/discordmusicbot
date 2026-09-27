@@ -28,7 +28,10 @@ class GuildQueue {
     });
 
     this.player.on('error', (error) => {
-      console.error(`Playback error in guild ${this.guildId}:`, error.message);
+      console.error(`Playback error in guild ${this.guildId} playing "${this.songs[0]?.url}":`, error);
+      if (this.textChannel && this.songs[0]) {
+        this.textChannel.send(`⚠️ Skipping **${this.songs[0].title}** — playback failed.`).catch(() => {});
+      }
       this.songs.shift();
       this.playing = false;
       this.playNext();
