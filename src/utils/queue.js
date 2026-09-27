@@ -45,6 +45,13 @@ class GuildQueue {
     });
     this.connection.on('stateChange', (oldState, newState) => {
       console.log(`[voice ${this.guildId}] ${oldState.status} -> ${newState.status}`);
+      // the library only surfaces internal state codes, not the actual WS close code/reason - grab it directly
+      if (newState.networking && newState.networking !== oldState.networking) {
+        const ws = newState.networking.state.ws;
+        ws?.on('close', (event) => {
+          console.log(`[voice ${this.guildId}] raw voice ws close: code=${event?.code} reason=${event?.reason || '(none)'}`);
+        });
+      }
     });
     // low-level handshake internals: DNS, UDP IP discovery, encryption negotiation
     this.connection.on('debug', (message) => console.log(`[voice ${this.guildId}] debug: ${message}`));
